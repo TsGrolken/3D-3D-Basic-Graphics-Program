@@ -151,7 +151,7 @@ void main()
 
 Then to implement mirror appearance, we need also pass the cubemap texture to the normal rendering program, and based on the fragment position, normal and view direction we sample from the cubemap texture as fragment color. And with a isMirror float uniform to switch between normal phong shading color and environment mapping color (there is a flat shading unit cube in the gif below, just to show the reflection more reasonable):
 
-![drag](report/gif2.gif)
+![drag](report/2.gif)
 
 When selecting an object, you can press 'n' to make it a mirror appearance, and press 'm' to set it to normal phong shading.
 
@@ -167,7 +167,7 @@ And 'x': reset the camera rotation if you lose your way, can press even if one o
 
 To make it easier to operate, you can press 'i' to enter view mode, and simply drag your mouse to move the camera (And also you can press 'x' to reset the camera rotation if you lose your way)
 
-![drag](report/gif3.gif)
+![drag](report/3.gif)
 
 ## Optional Task
 
@@ -175,7 +175,7 @@ To make it easier to operate, you can press 'i' to enter view mode, and simply d
 
 With simple changes to normal calculation, we can easily implement refraction in the shader (there is a flat shading unit cube in the gif below, just to show the refraction more reasonable):
 
-![drag](report/gif4.gif)
+![drag](report/4.gif)
 
 When selecting an object, you can press 'b' to make it transparent, when it is transparent, it does not generate any shadow.
 
@@ -189,6 +189,6 @@ To do this, we combine what we did for shadow mapping and skybox, we first gener
 
 After get the cubemap texture for the object, we switch the framebuffer to 0, render the object out, and switch the framebuffer back and start to render the next object until all objects get rendered, now objects reflect/refract all other objects (there is a flat shading unit cube in the gif below, just to show the reflection/refraction more reasonable):
 
-![drag](report/gif5.gif)
+![drag](report/5.gif)
 
 The program will be very slow, since the rendering times dramatically increase, and more memory is needed to save texture data.
