@@ -30,7 +30,7 @@ When key '4' is pressed, an unit cude will be created in flat shading.
 
 To implement shadow mapping, we need to use another framebuffer and another program with new shaders, we need to render the scene using this program and save depth information into a texture. We first generate a new framebuffer, and generate a texture to store depth map, then bind the texture to the framebuffer so after we render the scene in light position we will get a depth map in the texture:
 
-'''cpp
+```cpp
 const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
 
 //generate depth framebuffer
@@ -56,51 +56,45 @@ glReadBuffer(GL_NONE);
 glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 /////////////////////////////////////////////////////////
-
 // more setting ......
-
 /////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////
-
 // render the scene in the view position of light source to get depth map
-
 /////////////////////////////////////////////////////////
 
 /////////////////////////////////////////////////////////
-
 // normally render the scene using depth map
-
 /////////////////////////////////////////////////////////
-'''
+```
 
 Pass the light position and projection & view matrix as uniform to the shader, we can calculate vertex position in light view space and we can render the scene. Now the depth information is saved in depthMap texture, then we switch to the original framebuffer and are ready to render the true scene.
 
 The shader is nearly same as hw3, but this time we will add a shadow test to the shader to control the diffuse and specular color. We have get the depthMap texture, now pass it to the shader using:
 
-'''cpp
+```cpp
 glActiveTexture(GL_TEXTURE0);
 glBindTexture(GL_TEXTURE_2D, depthMap);
 glUniform1i(program.uniform("depthMap"), 0);
-'''
+```
 
 Then use it as a 2D sampler, we can now get the closest object's depth in the current fragment in fragment shader
 
-'''cpp
+```cpp
 //.....
 uniform sampler2D depthMap;
 //.....
 float depthValue = texture(depthMap, projCoords.xy).r;
-'''
+```
 
 Compare the closest depth and current object's fragment depth, we can decide if there should be in the shadow, however directly compare them will cause unnatural shadow shape because shadow map is limited by resolution and will get unprecise depth value. To handle this problem we will add a bias to current depth when comparing. After that we can render the shadow out by controlling the diffuse and specular color:
 
-'''cpp
+```cpp
 //.......
 float shadow = projCoords.z - 0.005 > depthValue  ? 1.0 : 0.0;
 vec4 f_color = triangleColor * vec4((ambient + shadow *  (vec3(1.0,1.0,1.0) - vec3(shadowColor)) + (1.0 - shadow ) * ( spec + diffuse ) ), 1.0);
 //.......
-'''
+```
 
 With shadowColor vector, we can control the shadow color, now if there is shadow, we only add a shadow color to final color, if there is no shadow, we just normally add diffuse and specular color. The results are shown beneath, light source is moving around the center on the top of the scene, a timer is controlling its horizontal position:
 
@@ -117,7 +111,7 @@ And in view mode or light mode, you can press 'x' or '=' to change shadow color.
 
 To implement environment mapping, we will first read pictures into texture to get a cubemap. I converted provided .jpg files to .ppm file and use code from hw1 to read them. This time we need to generate a cubemap texture, and write pictures to each of its faces, then we can pass it to the program as a uniform:
 
-'''cpp
+```cpp
 GLuint skyboxTexture;
 glActiveTexture(GL_TEXTURE1);
 glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
@@ -140,11 +134,11 @@ for (unsigned int i = 0; i < faces.size(); i++)
 //......
 
 glUniform1i(skybox_program.uniform("cubeMap"), 1);
-'''
+```
 
 I use another program and VAO/VBOs to draw the skybox, and we need to draw the skybox at last with glDepthMask(GL_FALSE) so skybox will not overwrite any thing and will not influence shadow mapping. After get the cubemap texture, we render the skybox out using shader:
 
-'''cpp
+```cpp
 //fragment shader
 out vec4 outColor_skybox;
 in vec3 TexCoords;
@@ -153,7 +147,7 @@ void main()
 {
     outColor_skybox = texture(cubeMap, TexCoords);
 };
-'''
+```
 
 Then to implement mirror appearance, we need also pass the cubemap texture to the normal rendering program, and based on the fragment position, normal and view direction we sample from the cubemap texture as fragment color. And with a isMirror float uniform to switch between normal phong shading color and environment mapping color (there is a flat shading unit cube in the gif below, just to show the reflection more reasonable):
 
