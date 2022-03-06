@@ -1,5 +1,5 @@
-# assignment-4-environment-mapping-and-shadow-mapping-TsGrolken
+# environment-mapping-and-shadow-mapping Sheng Tong
 
-Sheng Tong st4048
+Sheng Tong
 
-Report is in report.md
+See report.md for details
