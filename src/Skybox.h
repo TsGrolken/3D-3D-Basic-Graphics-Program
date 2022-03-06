@@ -224,9 +224,22 @@ GLuint readSkybox(std::vector<std::string> faces)
     return skyboxTexture;
 }
 
-void dynamicEnvMapping(GLuint cubeMapFBO, GLuint cubeMap, VertexArrayObject vao, Program program, VertexArrayObject skyvao, Program skyprogram, glm::mat4 view, float aspect, int object_index, std::vector<MyObject> objs, glm::mat4 camera)
+void dynamicEnvMapping(GLuint cubeMapFBO, GLuint cubeMap, GLuint depthMapFBO, GLuint depthMap, VertexArrayObject vao, Program program, VertexArrayObject skyvao, Program skyprogram, glm::mat4 view, float aspect, int object_index, std::vector<MyObject> objs, glm::mat4 camera)
 {
     glUniform1i(program.uniform("cubeMap"), 1);
+
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, depthMap);
+    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+   //              SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    //glDrawBuffer(GL_NONE);
+    //glReadBuffer(GL_NONE);
 
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
@@ -245,8 +258,8 @@ void dynamicEnvMapping(GLuint cubeMapFBO, GLuint cubeMap, VertexArrayObject vao,
 
     std::vector<glm::vec4> faces =
             {
-                    glm::vec4(1.f,0.f,0.f,1.f),
-                    glm::vec4(-1.f,0.f,0.f,1.f),
+                    glm::vec4(10.f,0.f,0.f,1.f),
+                    glm::vec4(-10.f,0.f,0.f,1.f),
                     glm::vec4(0.f,10.f,0.f,1.f),
                     glm::vec4(0.f,-10.f,0.f,1.f),
                     glm::vec4(0.f,0.f,10.f,1.f),
@@ -262,22 +275,34 @@ void dynamicEnvMapping(GLuint cubeMapFBO, GLuint cubeMap, VertexArrayObject vao,
                     glm::vec3(0.f,1.f,0.f),
                     glm::vec3(0.f,1.f,0.f)
             };
-
     for (int i = 0; i < 6; ++i)
+    {
+        glActiveTexture(GL_TEXTURE3);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT,
+                     256, 256, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+        glActiveTexture(GL_TEXTURE2);
         glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, 256, 256, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+    }
+
 
     for (unsigned int j= 0; j < 6; j++)
     {
+        glActiveTexture(GL_TEXTURE3);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_CUBE_MAP_POSITIVE_X + j, depthMap, 0);
+
+        glActiveTexture(GL_TEXTURE2);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + j, cubeMap, 0);
-        glClear(GL_COLOR_BUFFER_BIT|GL_COLOR_BUFFER_BIT );
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT );
 
         int first = 0;
         glm::vec4 eye4 = objs[object_index].T * glm::vec4(0.f,0.f,0.f, 1.f) ;
         glm::vec3 eye =glm::vec3(eye4.x / eye4.w,eye4.y/ eye4.w,eye4.z/ eye4.w);
+        //std::cout<<eye.x<<","<<eye.y<<","<<eye.z<<","<<std::endl;
         glm::vec4 center4 =objs[object_index].T* faces[j]  ;
         glm::vec3 center =glm::vec3(center4.x / center4.w,center4.y/ center4.w,center4.z/ center4.w);
+        //std::cout<<center.x<<","<<center.y<<","<<center.z<<","<<std::endl;
 
-        look = glm::perspective(glm::radians(90.f), 1.f , 0.01f, 100.0f) * glm::lookAt( eye, center, -heads[j]) *objs[object_index].T* camera;
+        look = glm::perspective(glm::radians(90.f), 1.f , 0.01f, 100.0f)  * glm::lookAt( eye, center, -heads[j]) *objs[object_index].T* camera;
 
         skyvao.bind();
         skyprogram.bind();
@@ -289,8 +314,18 @@ void dynamicEnvMapping(GLuint cubeMapFBO, GLuint cubeMap, VertexArrayObject vao,
 
             vao.bind();
             program.bind();
+            /*
+            glm::mat4 camera_move = glm::mat4(
+                    1.f, 0.f, 0.f, 0.f,
+                    0.f, 1.f, 0.f, 0.f,
+                    0.f, 0.f, 1.f, 0.f,
+                    0.f, 0.f, -1.0f, 1.f
+            );
+            glm::mat4  homography = glm::perspective(glm::radians(90.f), 1.0f, 1.0f, 100.0f) * camera_move;//glm::ortho(-10.f, 10.f, -10.f, 10.f, -10.f, 10.f)  * glm::scale(glm::mat4(1.f) , glm::vec3(10.f, 10.f, 10.f));
+            */
+            look = glm::perspective(glm::radians(90.f), 1.f , 0.1f, 100.0f) * glm::lookAt( eye , center, -heads[j])*objs[object_index].T;
+            //look = homography * glm::lookAt( eye , center, -heads[j]) *objs[object_index].T* camera;
 
-            look = glm::perspective(glm::radians(90.f), 1.f , 0.01f, 100.0f) * glm::lookAt( eye, center, -heads[j])*objs[object_index].T* camera;
             glUniformMatrix4fv(program.uniform("view"), 1, GL_FALSE, glm::value_ptr(look));
 
             glUniformMatrix4fv(program.uniform("transform"), 1, GL_FALSE, glm::value_ptr(objs[obj].T));
